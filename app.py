@@ -1,38 +1,35 @@
 import streamlit as st
-import librosa
+import tensorflow as tf
 import numpy as np
-import joblib
-import tempfile
-import os
+from PIL import Image
 
-model = joblib.load("model/genre_model.pkl")
-scaler = joblib.load("model/scaler.pkl")
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("model/cnn_genre_model.h5")
 
-def extract_features(file_path):
-    signal, sr = librosa.load(file_path, duration=30)
-    mfcc = librosa.feature.mfcc(y=signal, sr=sr, n_mfcc=13)
-    return np.mean(mfcc, axis=1)
+model = load_model()
 
-st.set_page_config(page_title="Music Genre Classifier", page_icon="🎵")
+classes = [
+    "blues","classical","country","disco","hiphop",
+    "jazz","metal","pop","reggae","rock"
+]
 
-st.title("🎵 Music Genre Classification")
-st.write("Upload a WAV audio file to predict its genre")
+st.title("🎵 Music Genre Classification (CNN)")
+st.write("Upload a spectrogram image")
 
-uploaded_file = st.file_uploader("Upload Audio", type=["wav"])
+file = st.file_uploader("Upload Image", type=["png","jpg","jpeg"])
 
-if uploaded_file:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(uploaded_file.read())
-        temp_path = tmp.name
+if file:
+    img = Image.open(file).convert("RGB")
+    st.image(img)
 
-    st.audio(uploaded_file)
+    img = img.resize((128,128))
+    img = np.array(img)/255.0
+    img = np.expand_dims(img, axis=0)
 
-    if st.button("Predict Genre"):
-        with st.spinner("Analyzing..."):
-            features = extract_features(temp_path)
-            features = scaler.transform([features])
-            prediction = model.predict(features)[0]
+    pred = model.predict(img)
+    genre = classes[np.argmax(pred)]
+    conf = np.max(pred)*100
 
-        st.success(f"🎧 Predicted Genre: **{prediction.upper()}**")
-
-    os.remove(temp_path)
+    st.success(f"Genre: {genre.upper()}")
+    st.info(f"Confidence: {conf:.2f}%")
