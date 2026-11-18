@@ -1,6 +1,24 @@
-dataset/
+# Python environments and caches
 venv/
+.venv/
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Streamlit secrets and logs
+.streamlit/secrets.toml
+*.log
+
+# Large source datasets and generated spectrograms.
+# Already tracked copies remain in Git until a separate data-history migration.
+Data/genres_original/
+Data/images_original/
+dataset/
+
+# Model and training outputs (the existing CNN checkpoint remains tracked)
 *.h5
 *.pkl
 features.csv
+runs/
+logs/
